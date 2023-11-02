@@ -119,10 +119,10 @@ public class TradeSystem extends JavaPlugin implements Proxy {
             registerListeners();
 
             //initiates metrics
-            new MetricsManager().start();
+            //new MetricsManager().start();
 
             afterOnEnable();
-            startUpdateNotifier();
+            //startUpdateNotifier();
         });
 
         notifyPlayers(null);

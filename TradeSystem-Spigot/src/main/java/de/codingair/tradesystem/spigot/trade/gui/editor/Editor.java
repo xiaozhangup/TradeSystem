@@ -53,7 +53,7 @@ public class Editor extends GUI {
     private final HashMap<Class<? extends TradeIcon>, ItemStack[]> variants = new HashMap<>();
 
     public Editor(String name, Player player) {
-        this(name, 54, player);
+        this(name, 36, player);
     }
 
     public Editor(String name, int tradeSize, Player player) {
@@ -61,7 +61,7 @@ public class Editor extends GUI {
     }
 
     public Editor(Pattern pattern, Player player) {
-        this(pattern.getName(), 54, pattern, player);
+        this(pattern.getName(), 36, pattern, player);
     }
 
     private Editor(@NotNull String name, int tradeSize, @Nullable Pattern pattern, Player player) {
