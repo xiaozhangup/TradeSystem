@@ -3,7 +3,9 @@ package de.codingair.tradesystem.spigot;
 import de.codingair.codingapi.API;
 import de.codingair.codingapi.files.ConfigFile;
 import de.codingair.codingapi.files.FileManager;
+import de.codingair.codingapi.nms.NmsCheck;
 import de.codingair.codingapi.player.chat.ChatButtonManager;
+import de.codingair.codingapi.server.specification.Type;
 import de.codingair.codingapi.server.specification.Version;
 import de.codingair.codingapi.utils.Value;
 import de.codingair.packetmanagement.utils.Proxy;
@@ -40,6 +42,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileNotFoundException;
+import java.util.logging.Level;
 
 public class TradeSystem extends JavaPlugin implements Proxy {
     private static TradeSystem instance;
@@ -50,7 +53,7 @@ public class TradeSystem extends JavaPlugin implements Proxy {
     private final DatabaseHandler databaseHandler = new DatabaseHandler();
     private final FileManager fileManager = new FileManager(this);
 
-    private final SpigotHandler spigotHandler = new SpigotHandler(this);
+    private SpigotHandler spigotHandler;
     private final ProxyDataHandler proxyDataHandler = new ProxyDataHandler();
 
     private final UpdateNotifier updateNotifier = new UpdateNotifier(getDescription().getVersion(), "TradeSystem", 58434);
@@ -62,6 +65,7 @@ public class TradeSystem extends JavaPlugin implements Proxy {
     private TradeCMD tradeCMD;
 
     private boolean firstSetup;
+    private boolean workingNms = false;
     private YamlConfiguration oldConfig;
 
     public static void log(String message) {
@@ -95,6 +99,8 @@ public class TradeSystem extends JavaPlugin implements Proxy {
     @Override
     public void onEnable() {
         instance = this;
+        checkNms();
+
         API.getInstance().onEnable(this);
 
         printConsoleInfo(() -> {
@@ -111,6 +117,7 @@ public class TradeSystem extends JavaPlugin implements Proxy {
             loadManagers();
 
             //register packet channels before listening to events
+            this.spigotHandler = new SpigotHandler(this);
             this.spigotHandler.onEnable();
             this.proxyDataHandler.onEnable();
 
@@ -130,6 +137,12 @@ public class TradeSystem extends JavaPlugin implements Proxy {
 
     @Override
     public void onDisable() {
+        if (!workingNms) {
+            getLogger().log(Level.SEVERE, "This Minecraft version appears to be unsupported. Ensure your server .jar file is up to date. If it is, please contact the author with the error message above.");
+            getLogger().log(Level.SEVERE, "Here's an invitation to the discord for support: https://discord.gg/DxKMcGjQbp");
+            return;
+        } else workingNms = false;
+
         API.getInstance().onDisable(this);
         Bukkit.getScheduler().cancelTasks(this);
 
@@ -141,7 +154,7 @@ public class TradeSystem extends JavaPlugin implements Proxy {
             if (this.tradeLogCMD != null) this.tradeLogCMD.unregister();
 
             //unregister packet channels
-            this.spigotHandler.onDisable();
+            if (this.spigotHandler != null) this.spigotHandler.onDisable();
             this.proxyDataHandler.onDisable();
 
             HandlerList.unregisterAll(this);
@@ -167,7 +180,7 @@ public class TradeSystem extends JavaPlugin implements Proxy {
         log(" ");
         log("Status:");
         log(" ");
-        log("MC-Version: " + Version.get().fullVersion());
+        log("MC-Version: " + Version.fullVersion());
         log(" ");
 
         runnable.run();
@@ -177,6 +190,11 @@ public class TradeSystem extends JavaPlugin implements Proxy {
         log(" ");
         log("__________________________________________________________");
         log(" ");
+    }
+
+    private void checkNms() {
+        NmsCheck.test(new Class[0]);
+        workingNms = true;
     }
 
     private void loadManagers() {
@@ -252,7 +270,7 @@ public class TradeSystem extends JavaPlugin implements Proxy {
     }
 
     private void updateCommandList() {
-        if (Version.get().isBiggerThan(Version.v1_12)) {
+        if (Version.after(12)) {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 player.updateCommands();
             }
