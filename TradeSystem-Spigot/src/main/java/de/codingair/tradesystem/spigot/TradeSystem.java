@@ -1,11 +1,12 @@
 package de.codingair.tradesystem.spigot;
 
+import com.github.Anon8281.universalScheduler.UniversalScheduler;
+import com.github.Anon8281.universalScheduler.scheduling.tasks.MyScheduledTask;
 import de.codingair.codingapi.API;
 import de.codingair.codingapi.files.ConfigFile;
 import de.codingair.codingapi.files.FileManager;
 import de.codingair.codingapi.nms.NmsCheck;
 import de.codingair.codingapi.player.chat.ChatButtonManager;
-import de.codingair.codingapi.server.specification.Type;
 import de.codingair.codingapi.server.specification.Version;
 import de.codingair.codingapi.utils.Value;
 import de.codingair.packetmanagement.utils.Proxy;
@@ -38,7 +39,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileNotFoundException;
@@ -144,21 +144,21 @@ public class TradeSystem extends JavaPlugin implements Proxy {
         } else workingNms = false;
 
         API.getInstance().onDisable(this);
-        Bukkit.getScheduler().cancelTasks(this);
+        UniversalScheduler.getScheduler(this).cancelTasks();
 
         printConsoleInfo(() -> {
-            this.tradeHandler.disable();
+            tradeHandler.disable();
 
-            this.tradeCMD.unregister();
-            this.tradeSystemCMD.unregister();
-            if (this.tradeLogCMD != null) this.tradeLogCMD.unregister();
+            if (tradeCMD != null) tradeCMD.unregister();
+            if (tradeSystemCMD != null) tradeSystemCMD.unregister();
+            if (tradeLogCMD != null) tradeLogCMD.unregister();
 
             //unregister packet channels
-            if (this.spigotHandler != null) this.spigotHandler.onDisable();
-            this.proxyDataHandler.onDisable();
+            if (spigotHandler != null) spigotHandler.onDisable();
+            proxyDataHandler.onDisable();
 
             HandlerList.unregisterAll(this);
-            this.fileManager.destroy();
+            fileManager.destroy();
 
             PluginDependencies.disable();
 
@@ -246,7 +246,7 @@ public class TradeSystem extends JavaPlugin implements Proxy {
     }
 
     private void startUpdateNotifier() {
-        Value<BukkitTask> task = new Value<>(null);
+        Value<MyScheduledTask> task = new Value<>(null);
         Runnable runnable = () -> {
             needsUpdate = updateNotifier.read();
 
@@ -261,12 +261,13 @@ public class TradeSystem extends JavaPlugin implements Proxy {
             }
         };
 
-        task.setValue(Bukkit.getScheduler().runTaskTimerAsynchronously(getInstance(), runnable, 20L * 60 * 60, 20L * 60 * 60)); //check every hour on GitHub
+        task.setValue(
+                UniversalScheduler.getScheduler(getInstance()).runTaskTimerAsynchronously(runnable, 20L * 60 * 60, 20L * 60 * 60)); //check every hour on GitHub
     }
 
     private void afterOnEnable() {
         //update command dispatcher for players to synchronize CommandList
-        Bukkit.getScheduler().runTask(this, this::updateCommandList);
+        UniversalScheduler.getScheduler(this).runTask(this::updateCommandList);
     }
 
     private void updateCommandList() {
